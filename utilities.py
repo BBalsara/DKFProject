@@ -89,7 +89,8 @@ class World():
             plt.arrow(sensor.position[0], sensor.position[1], k*np.cos(sensor.bearing-sensor.fov/2), k*np.sin(sensor.bearing-sensor.fov/2), color='k', head_width=0.1)
             arc = patches.Arc((sensor.position[0], sensor.position[1]), 2*k, 2*k, theta1=np.degrees(sensor.bearing-sensor.fov/2), theta2=np.degrees(sensor.bearing+sensor.fov/2), color='k')
             ax.add_patch(arc)
-            triangle = patches.Polygon([[sensor.position[0], sensor.position[1]], [sensor.position[0]+k*np.cos(sensor.bearing+sensor.fov/2), sensor.position[1]+k*np.sin(sensor.bearing+sensor.fov/2)], [sensor.position[0]+k*np.cos(sensor.bearing-sensor.fov/2), sensor.position[1]+k*np.sin(sensor.bearing-sensor.fov/2)]], color='k', alpha=0.2)
+            triangle = patches.Polygon([[sensor.position[0], sensor.position[1]], [sensor.position[0]+k*np.cos(sensor.bearing+sensor.fov/2), sensor.position[1]+k*np.sin(sensor.bearing+sensor.fov/2)], 
+                                        [sensor.position[0]+k*np.cos(sensor.bearing-sensor.fov/2), sensor.position[1]+k*np.sin(sensor.bearing-sensor.fov/2)]], color='k', alpha=0.2)
             ax.add_patch(triangle)
             theta = np.linspace(sensor.bearing-sensor.fov/2, sensor.bearing+sensor.fov/2, 100)
             r = k
