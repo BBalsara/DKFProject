@@ -102,14 +102,6 @@ class World():
         plt.gca().set_aspect('equal')
         plt.show()
 
-
-# Objects (different movement pattern)
-# class Target():
-#     def _init_(self, pos_0, dynamics):
-#         self.pos = pos_0
-#         self.dynamics = dynamics
-    
-#     def f(self, t):
         
 
 
