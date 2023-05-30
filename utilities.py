@@ -45,7 +45,7 @@ class Sensor():
     def measurment(self, target_pos):
         return self.g(target_pos) + np.array([np.random.normal(0, self.dist_noise), np.random.normal(0, self.angle_noise)])
 
-    # returns the measurement of the object in the global frame
+    # returns the measurement of the object in the global frame (Not needed)
     def globalTransform(self, target_pos):
         if self.isVisible(target_pos):
             angle = self.angle_meas(target_pos)
@@ -56,7 +56,7 @@ class Sensor():
 
             return np.array([xm, ym])
         
-    def jacobian(self, target_pos):
+    def jacobian_C(self, target_pos):
         Px = target_pos[0]
         Py = target_pos[1]
         Sx = self.position[0]
@@ -113,5 +113,78 @@ class World():
         
 
 
-# Linear movement
-# Sine movement
+class Movement():
+    def __init__(self, Movement_pattern='linear', initial_location=np.array([0, 0]), del_t=0.01, speed=1, angle=0):
+        self.pattern = Movement_pattern.lower()  # can be 'Linear', 'sine', 'diff_drive' 
+        self.state = initial_location  # Location in the world frame
+        self.del_t = del_t
+        self.speed = speed
+        self.angle = angle  # angle in rad
+
+        if self.pattern == 'linear':
+            self.state = initial_location
+        elif self.pattern == 'sine' or self.pattern == 'sin':
+            self.pattern = 'sine'
+            self.state = initial_location
+        elif self.pattern == 'diff_drive':
+            if initial_location.shape[0] == 2:
+                self.state = np.hstack((initial_location, angle))
+
+
+    def f_function(self, u=np.array([0, 0])):
+        # Linear movement
+        if self.loc == 'linear':
+            # x_dot = vel * cos angle
+            state = np.array([np.cos(self.angle) * self.speed * self.del_t,
+                                   np.sin(self.angle) * self.speed * self.del_t]) + self.state
+            return state
+
+        # Sine movement
+        if self.loc == 'sine':
+            # xt = vel * delt * x_t-1
+            # yt = sin(xt) + y_t-1
+            del_xt = self.speed * self.del_t
+            state = np.array([del_xt,
+                                   np.sin(del_xt + self.state[0])]) + self.state
+            return state
+        
+        # Diff drive
+        if self.loc == 'diff_drive':
+            px = self.state[0]
+            py = self.state[1]
+            theta = self.state[2]
+            v = u[0]
+            phi = u[1]
+            state = (np.array([px + self.del_t * v * np.cos(theta),
+                            py + self.del_t * v * np.sin(theta),
+                            theta + self.del_t * phi]))
+            return state
+        
+        print('No Movement Pattern defined')
+        return None
+    
+    def jacobian_A(self, u=np.array([0, 0])):
+        # Linear movement
+        if self.loc == 'linear':
+            return np.eye(2)
+        
+        # Sine movement
+        if self.loc == 'sine':
+            return np.array([[1, 0],
+                             [np.cos(self.speed * self.del_t + self.state[0]), 1]])
+        
+        # Diff drive
+        if self.loc == 'diff_drive':
+            px = self.state[0]
+            py = self.state[1]
+            theta = self.state[2]
+            v = u[0]
+            phi = u[1]
+            out = np.array([[1, 0, -self.del_t * v * np.sin(theta)],
+                        [0, 1, self.del_t * v * np.cos(theta)],
+                        [0, 0, 1]])
+            return out
+        
+    # use this to update the internal state values
+    def one_step(self, u=np.array([0, 0])):
+        self.state = self.f_function(u)
