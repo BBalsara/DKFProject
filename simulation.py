@@ -53,6 +53,7 @@ def update(target: Movement, pred_mu, pred_cov, world: World):
     else:
         Kt = pred_cov @ C.T @ np.linalg.inv(C @ pred_cov @ C.T + np.diag(sensor_noises))
         mu = pred_mu + Kt @ (y-g)
+        print(y-g)
         cov = pred_cov - Kt @ C @ pred_cov 
 
     return mu, cov
@@ -127,9 +128,9 @@ ax.set_xlabel('px')
 ax.set_ylabel('py')
 
 plt.figure()
-plt.plot(sensor2.history, label='sensor1')
+plt.plot(np.degrees(sensor3.history))
 plt.legend()
-plt.title('Sensor1 history')
+plt.title('Sensor3 history')
 plt.xlabel('time')
 plt.ylabel('angle')
 plt.show()

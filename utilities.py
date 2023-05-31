@@ -43,8 +43,8 @@ class Sensor():
         return angle
     
     # sensor measurement model with noise
-    def measurment(self, target_pos):
-        return self.g(target_pos) + np.array([np.random.normal(0, self.angle_noise)])
+    # def measurment(self, target_pos):
+    #     return self.g(target_pos) + np.array([np.random.normal(0, self.angle_noise)])
 
     # returns the measurement of the object in the global frame (Not needed)
     # def globalTransform(self, target_pos):
