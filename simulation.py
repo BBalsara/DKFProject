@@ -3,6 +3,9 @@
 import numpy as np
 from utilities import Movement, Sensor, World
 import matplotlib.pyplot as plt
+
+n = 3 # toggles state dimension
+
 # Simulation class
 
 
@@ -44,7 +47,7 @@ def update(target: Movement, pred_mu, pred_cov, world: World):
     y = np.zeros(sensor_count) # for storing true measurements of sensors with target in FOV
     g = np.zeros(sensor_count) # for storing predicted measurements of sensors with target in FOV
     for idx, sensor in enumerate(sensors):
-        C[idx,:] = sensor.jacobian_C(pred_mu)
+        C[idx,:] = sensor.jacobian_C(pred_mu, n)
         sensor_noises[idx] = sensor.angle_noise
         y[idx] = sensor.angle_meas(true_state)
         g[idx] = sensor.g(pred_mu)
@@ -53,7 +56,6 @@ def update(target: Movement, pred_mu, pred_cov, world: World):
     else:
         Kt = pred_cov @ C.T @ np.linalg.inv(C @ pred_cov @ C.T + np.diag(sensor_noises))
         mu = pred_mu + Kt @ (y-g)
-        print(y-g)
         cov = pred_cov - Kt @ C @ pred_cov 
 
     return mu, cov
@@ -61,15 +63,21 @@ def update(target: Movement, pred_mu, pred_cov, world: World):
 
 Tmax = 40
 d_t = 0.01
-mu = np.zeros((3, int(Tmax/d_t)))
-cov = np.zeros((3, 3, int(Tmax/d_t)))
-mu0 = np.array([4.5,0,0])
-cov0 = 0.01*np.eye(3)
+mu = np.zeros((n, int(Tmax/d_t)))
+cov = np.zeros((n, n, int(Tmax/d_t)))
+if n == 2:
+    mu0 = np.array([4.5,0])
+    trueInit = np.array([5,0])
+elif n == 3:
+    mu0 = np.array([4.5,0,0])
+    trueInit = np.array([5,0,0])
+else:
+    print("Invalid state dimension")
+cov0 = 0.01*np.eye(n)
 mu[:, 0] = mu0
 cov[:, :, 0] = cov0
 
-trueInit = np.array([5,0,0])
-trueState = np.zeros((3, int(Tmax/d_t)))
+trueState = np.zeros((n, int(Tmax/d_t)))
 trueState[:, 0] = trueInit
 
 # Initialize the object

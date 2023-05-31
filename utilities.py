@@ -57,7 +57,7 @@ class Sensor():
 
     #         return np.array([xm, ym])
         
-    def jacobian_C(self, target_pos):
+    def jacobian_C(self, target_pos, n):
         Px = target_pos[0]
         Py = target_pos[1]
         Sx = self.position[0]
@@ -69,7 +69,10 @@ class Sensor():
         # second row
         C21 = (Sy - Py)/(np.linalg.norm(self.position - target_pos[0:2])**2)
         C22 = (Px - Sx)/(np.linalg.norm(self.position - target_pos[0:2])**2)
-        return np.array([C21,C22,0])
+        if n == 3:
+            return np.array([C21,C22,0])
+        else:
+            return np.array([C21,C22])
 
 
 class World():
