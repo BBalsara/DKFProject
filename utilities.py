@@ -33,10 +33,10 @@ class Sensor():
     def angle_meas(self, target_pos):
         meas = self.g(target_pos) + np.random.normal(0, self.angle_noise)
         self.history = np.append(self.history, meas)
-        if angle > np.pi:
-            angle -= 2*np.pi
-        elif angle < -np.pi:
-            angle += 2*np.pi
+        if meas > np.pi:
+            meas -= 2*np.pi
+        elif meas < -np.pi:
+            meas += 2*np.pi
         return meas   
     
     # sensor measurement model return (dist, theta)
@@ -93,7 +93,7 @@ class World():
         
     # function to plot location of sensors and their respective FOVs
     def FOVplot(self):
-        k = 5 # length of arrow scale factor
+        k = 15 # length of arrow scale factor
         fig, ax = plt.subplots()
         plt.grid()
         for sensor in self.sensors:   
