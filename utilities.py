@@ -33,6 +33,10 @@ class Sensor():
     def angle_meas(self, target_pos):
         meas = self.g(target_pos) + np.random.normal(0, self.angle_noise)
         self.history = np.append(self.history, meas)
+        if angle > np.pi:
+            angle -= 2*np.pi
+        elif angle < -np.pi:
+            angle += 2*np.pi
         return meas   
     
     # sensor measurement model return (dist, theta)
