@@ -32,10 +32,6 @@ class Sensor():
     # returns the measurement of the object's angle in the sensor frame
     def angle_meas(self, target_pos):
         meas = self.g(target_pos) + np.random.normal(0, self.angle_noise)
-        if meas > np.pi:
-            meas -= 2*np.pi
-        elif meas < -np.pi:
-            meas += 2*np.pi
         self.history = np.append(self.history, meas)
         return meas   
     
