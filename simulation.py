@@ -5,13 +5,13 @@ from utilities import Movement, Sensor, World
 import matplotlib.pyplot as plt
 
 n = 3 # toggles state dimension
-
+np.random.seed(11)
 # Simulation class
 
 
 
 # Cameras (Position, FOV)
-fov = np.radians(120)
+fov = np.radians(30)
 bearing1 = np.radians(45) 
 bearing2 = np.radians(225)
 bearing3 = np.radians(135)
@@ -25,9 +25,9 @@ sensor1 = Sensor(position1, fov, bearing1, angle_noise)
 sensor2 = Sensor(position2, fov, bearing2, angle_noise)
 sensor3 = Sensor(position3, fov, bearing3, angle_noise)
 sensor4 = Sensor(position4, fov, bearing4, angle_noise)
-world = World(np.array([sensor1, sensor2, sensor3, sensor4]))
+world = World(np.array([sensor1, sensor3, sensor4]))
 render, ax = world.FOVplot()
-
+measurement_difference = np.array([0,0])
 
 # EKF prediction
 def predict(prev_mu, prev_cov, target: Movement, u):
@@ -38,6 +38,7 @@ def predict(prev_mu, prev_cov, target: Movement, u):
 
 # EKF update
 def update(target: Movement, pred_mu, pred_cov, world: World):
+    measurement_difference = np.array([])
     # pull out sensor data
     sensors = [sensor for sensor in world.sensors if sensor.is_visible(target.state)]
     sensor_count = len(sensors)
@@ -55,10 +56,14 @@ def update(target: Movement, pred_mu, pred_cov, world: World):
         return pred_mu, pred_cov
     else:
         Kt = pred_cov @ C.T @ np.linalg.inv(C @ pred_cov @ C.T + np.diag(sensor_noises))
-        mu = pred_mu + Kt @ (y-g)
+        measurement_difference = y-g
+        
+
+        mu = pred_mu + Kt @ (measurement_difference)
+        measurement_difference = np.append(measurement_difference, np.array(y-g).flatten())
         cov = pred_cov - Kt @ C @ pred_cov 
 
-    return mu, cov
+    return mu, cov, measurement_difference
 
 
 Tmax = 40
@@ -101,13 +106,27 @@ for t in range(1, int(Tmax/d_t)):
     pred_mu, pred_cov = predict(prev_mu, prev_cov, Object_a, u)
 
     # Update step
-    updated_mu, updated_cov = update(Object_a, pred_mu, pred_cov, world)
-
+    updated_mu, updated_cov, mdiff = update(Object_a, pred_mu, pred_cov, world)
+    measurement_difference = np.append(measurement_difference, mdiff)
     # Store values
     mu[:, t] = updated_mu
     cov[:, :, t] = updated_cov
-    
+
+# Performance Calculation
+error = np.linalg.norm(trueState-mu)
+print('Error:', error)
+
+
 # Plotting
+ax.plot()
+ax.plot(trueState[0,:],trueState[1,:], label='True Path')
+ax.plot(mu[0,:],mu[1,:], label='Estimated Path')
+ax.legend()
+ax.set_title('EKF Estimated Trajectory')
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+plt.show()
+
 timeArray = np.arange(0,Tmax,d_t)
 plt.figure()
 plt.plot(timeArray,trueState[0,:], label='true px')
@@ -118,6 +137,7 @@ plt.xlabel('time')
 plt.ylabel('px')
 # plt.show()
 
+
 plt.figure()
 plt.plot(timeArray,trueState[1,:], label='true py')
 plt.plot(timeArray,mu[1,:], label='estimated py')
@@ -127,18 +147,18 @@ plt.xlabel('time')
 plt.ylabel('py')
 # plt.show()
 
-ax.plot()
-ax.plot(trueState[0,:],trueState[1,:], label='true path')
-ax.plot(mu[0,:],mu[1,:], label='estimated path')
-ax.legend()
-ax.set_title('EKF Output for path')
-ax.set_xlabel('px')
-ax.set_ylabel('py')
+
 
 plt.figure()
-plt.plot(np.degrees(sensor3.history))
-plt.legend()
-plt.title('Sensor3 history')
+plt.plot(np.degrees(sensor1.history))
+plt.title('Sensor1 history')
 plt.xlabel('time')
 plt.ylabel('angle')
-plt.show()
+
+plt.figure()
+plt.plot((measurement_difference))
+plt.title('measurement difference history')
+plt.xlabel('time')
+plt.ylabel('angle')
+# plt.show()
+
