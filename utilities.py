@@ -93,7 +93,7 @@ class World():
         
     # function to plot location of sensors and their respective FOVs
     def FOVplot(self):
-        k = 15 # length of arrow scale factor
+        k = 40 # length of arrow scale factor
         fig, ax = plt.subplots()
         plt.grid()
         for sensor in self.sensors:   
@@ -112,6 +112,8 @@ class World():
             y = r*np.sin(theta) + sensor.position[1]
             arcPart = patches.Polygon(np.column_stack((x,y)), color='k', alpha=0.2)
             ax.add_patch(arcPart)
+        plt.xlim(np.min([sensor.position[0] for sensor in self.sensors])-5, np.max([sensor.position[0] for sensor in self.sensors])+5)
+        plt.ylim(np.min([sensor.position[1] for sensor in self.sensors])-5, np.max([sensor.position[1] for sensor in self.sensors])+5)
         plt.gca().set_aspect('equal')
         return fig, ax
 

@@ -125,6 +125,13 @@ ax.legend()
 ax.set_title('EKF Estimated Trajectory')
 ax.set_xlabel('x')
 ax.set_ylabel('y')
+# adjust window size based on the trajectory
+xlow = np.minimum(np.min(trueState[0,:])-5, (np.min([sensor.position[0] for sensor in world.sensors])-5))
+xhigh = np.maximum(np.max(trueState[0,:])+5, (np.max([sensor.position[0] for sensor in world.sensors])+5))
+ylow = np.minimum(np.min(trueState[1,:])-5, (np.min([sensor.position[1] for sensor in world.sensors])-5))
+yhigh = np.maximum(np.max(trueState[1,:])+5, (np.max([sensor.position[1] for sensor in world.sensors])+5))
+ax.set_xlim(xlow, xhigh)
+ax.set_ylim(ylow, yhigh)
 plt.show()
 
 timeArray = np.arange(0,Tmax,d_t)
