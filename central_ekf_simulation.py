@@ -9,7 +9,6 @@ np.random.seed(11)
 # Simulation class
 
 
-
 # Cameras (Position, FOV)
 fov = np.radians(30)
 bearing1 = np.radians(45) 
@@ -21,10 +20,10 @@ position2 = np.array([10,10])
 position3 = np.array([15,0])
 position4 = np.array([30,5])
 angle_noise = 0.1
-sensor1 = Sensor(position1, fov, bearing1, angle_noise)
-sensor2 = Sensor(position2, fov, bearing2, angle_noise)
-sensor3 = Sensor(position3, fov, bearing3, angle_noise)
-sensor4 = Sensor(position4, fov, bearing4, angle_noise)
+sensor1 = Sensor(position1, fov, bearing1, angle_noise,n)
+sensor2 = Sensor(position2, fov, bearing2, angle_noise,n)
+sensor3 = Sensor(position3, fov, bearing3, angle_noise,n)
+sensor4 = Sensor(position4, fov, bearing4, angle_noise,n)
 world = World(np.array([sensor1, sensor3, sensor4]))
 render, ax = world.FOVplot()
 measurement_difference = np.array([0,0])
@@ -90,28 +89,27 @@ Object_a = Movement(Movement_pattern='diff_drive', del_t=d_t, initial_location=t
 
 
 for t in range(1, int(Tmax/d_t)):
-    for i in range(len(world.sensors)):
-        # Simulation
-        prev_mu = mu[:, t-1]
-        prev_cov = cov[:, :, t-1]
+    # Simulation
+    prev_mu = mu[:, t-1]
+    prev_cov = cov[:, :, t-1]
 
-        # Calculate u if needed
-        u = np.array([0.8, np.sin(t*d_t)])
+    # Calculate u if needed
+    u = np.array([0.8, np.sin(t*d_t)])
 
-        # Update true State
-        x = Object_a.one_step(u)
-        # print("x: ", x)
-        trueState[:, t] = x
-        
-        # Predict step
-        pred_mu, pred_cov = predict(prev_mu, prev_cov, Object_a, u)
+    # Update true State
+    x = Object_a.one_step(u)
+    # print("x: ", x)
+    trueState[:, t] = x
+    
+    # Predict step
+    pred_mu, pred_cov = predict(prev_mu, prev_cov, Object_a, u)
 
-        # Update step
-        updated_mu, updated_cov, mdiff = update(Object_a, pred_mu, pred_cov, world)
-        measurement_difference = np.append(measurement_difference, mdiff)
-        # Store values
-        mu[:, t] = updated_mu
-        cov[:, :, t] = updated_cov
+    # Update step
+    updated_mu, updated_cov, mdiff = update(Object_a, pred_mu, pred_cov, world)
+    measurement_difference = np.append(measurement_difference, mdiff)
+    # Store values
+    mu[:, t] = updated_mu
+    cov[:, :, t] = updated_cov
 
 # Performance Calculation
 error = np.linalg.norm(trueState-mu)

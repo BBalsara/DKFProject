@@ -3,120 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
-class Sensor():
-    def __init__(self, position, fov, bearing, angle_noise):
-        self.position = position # position of the sensor in global frame
-        self.bearing = bearing # angle definining center of FOV from global frame x-axis
-        self.fov = fov # total angle of view for the camera (split in two across the bearing)
-        # self.dist_noise = dist_noise # should be larger
-        self.angle_noise = angle_noise # should be smaller
-        self.history = np.array([])
-    
-    # returns true if the target is visible to the sensor
-    def is_visible(self, target_pos):
-        # Relative position
-        rel_pos = target_pos[0:2] - self.position
-
-        # Angle between sensor and target
-        meas_angle = self.g(target_pos)
-
-        return (-self.fov/2 <= meas_angle and meas_angle <= self.fov/2)
-
-    # returns the measurement of the object's distance in the sensor frame
-    # def dist_meas(self, target_pos):
-    #     dist = np.linalg.norm(self.position - target_pos)
-    #     # dist += np.random.normal(0, self.dist_noise)
-
-    #     return dist
-    
-    # returns the measurement of the object's angle in the sensor frame
-    def angle_meas(self, target_pos):
-        meas = self.g(target_pos) + np.random.normal(0, self.angle_noise)
-        self.history = np.append(self.history, meas)
-        if meas > np.pi:
-            meas -= 2*np.pi
-        elif meas < -np.pi:
-            meas += 2*np.pi
-        return meas   
-    
-    # sensor measurement model return (dist, theta)
-    def g(self, target_pos):
-        # Angle between sensor and target
-        rel_pos = target_pos[0:2] - self.position
-        angle = ((np.arctan2(rel_pos[1], rel_pos[0]))) - self.bearing
-        if angle > np.pi:
-            angle -= 2*np.pi
-        elif angle < -np.pi:
-            angle += 2*np.pi
-        return angle
-    
-    # sensor measurement model with noise
-    # def measurment(self, target_pos):
-    #     return self.g(target_pos) + np.array([np.random.normal(0, self.angle_noise)])
-
-    # returns the measurement of the object in the global frame (Not needed)
-    # def globalTransform(self, target_pos):
-    #     if self.isVisible(target_pos):
-    #         angle = self.angle_meas(target_pos)
-    #         # dist = self.dist_meas(target_pos)
-            
-    #         xm = dist*np.cos(angle+self.bearing) + self.position[0]
-    #         ym = dist*np.sin(angle+self.bearing) + self.position[1]
-
-    #         return np.array([xm, ym])
-        
-    def jacobian_C(self, target_pos, n):
-        Px = target_pos[0]
-        Py = target_pos[1]
-        Sx = self.position[0]
-        Sy = self.position[1]
-        # firsWt row
-        # dist = self.dist_meas(target_pos)
-        # C11 = (Px - Sx)/dist
-        # C12 = (Py - Sy)/dist
-        # second row
-        C21 = (Sy - Py)/(np.linalg.norm(self.position - target_pos[0:2])**2)
-        C22 = (Px - Sx)/(np.linalg.norm(self.position - target_pos[0:2])**2)
-        if n == 3:
-            return np.array([C21,C22,0])
-        else:
-            return np.array([C21,C22])
-
-
-class World():
-    def __init__(self, sensors):
-        self.sensors = sensors # list of sensors in the world
-
-    # function for adding sensors to the world
-    def addSensor(self, position, FOV, bearing, angle_noise):
-        self.sensors.append(Sensor(position, FOV, bearing, angle_noise))        
-        
-    # function to plot location of sensors and their respective FOVs
-    def FOVplot(self):
-        k = 40 # length of arrow scale factor
-        fig, ax = plt.subplots()
-        plt.grid()
-        for sensor in self.sensors:   
-            plt.scatter(sensor.position[0], sensor.position[1], color='k')
-            plt.arrow(sensor.position[0], sensor.position[1], k*np.cos(sensor.bearing), k*np.sin(sensor.bearing), color='b', head_width=0.1, linestyle = 'dotted')
-            plt.arrow(sensor.position[0], sensor.position[1], k*np.cos(sensor.bearing+sensor.fov/2), k*np.sin(sensor.bearing+sensor.fov/2), color='k', head_width=0.1)
-            plt.arrow(sensor.position[0], sensor.position[1], k*np.cos(sensor.bearing-sensor.fov/2), k*np.sin(sensor.bearing-sensor.fov/2), color='k', head_width=0.1)
-            arc = patches.Arc((sensor.position[0], sensor.position[1]), 2*k, 2*k, theta1=np.degrees(sensor.bearing-sensor.fov/2), theta2=np.degrees(sensor.bearing+sensor.fov/2), color='k')
-            ax.add_patch(arc)
-            triangle = patches.Polygon([[sensor.position[0], sensor.position[1]], [sensor.position[0]+k*np.cos(sensor.bearing+sensor.fov/2), sensor.position[1]+k*np.sin(sensor.bearing+sensor.fov/2)], 
-                                        [sensor.position[0]+k*np.cos(sensor.bearing-sensor.fov/2), sensor.position[1]+k*np.sin(sensor.bearing-sensor.fov/2)]], color='k', alpha=0.2)
-            ax.add_patch(triangle)
-            theta = np.linspace(sensor.bearing-sensor.fov/2, sensor.bearing+sensor.fov/2, 100)
-            r = k
-            x = r*np.cos(theta) + sensor.position[0]
-            y = r*np.sin(theta) + sensor.position[1]
-            arcPart = patches.Polygon(np.column_stack((x,y)), color='k', alpha=0.2)
-            ax.add_patch(arcPart)
-        plt.xlim(np.min([sensor.position[0] for sensor in self.sensors])-5, np.max([sensor.position[0] for sensor in self.sensors])+5)
-        plt.ylim(np.min([sensor.position[1] for sensor in self.sensors])-5, np.max([sensor.position[1] for sensor in self.sensors])+5)
-        plt.gca().set_aspect('equal')
-        return fig, ax
-
 class Movement():
     def __init__(self, Movement_pattern='linear', initial_location=np.array([0, 0]), del_t=0.01, speed=.5, angle=0):
         self.pattern = Movement_pattern.lower()  # can be 'Linear', 'sine', 'diff_drive' 
@@ -128,7 +14,7 @@ class Movement():
 
         if self.pattern == 'linear':
             self.state = initial_location
-            self.Q = 0.001* np.eye(2)
+            self.Q = 0.1* np.eye(2)
         elif self.pattern == 'sine' or self.pattern == 'sin':
             self.pattern = 'sine'
             self.state = initial_location
@@ -194,3 +80,146 @@ class Movement():
         dims = self.state.shape[0]
         self.state = self.f_function(self.state, u) + np.random.multivariate_normal(np.zeros(dims), self.del_t*self.Q)
         return self.state
+        
+class World():
+    def __init__(self, sensors):
+        self.sensors = sensors # list of sensors in the world
+
+    # function for adding sensors to the world
+    def addSensor(self, position, FOV, bearing, angle_noise):
+        self.sensors.append(Sensor(position, FOV, bearing, angle_noise))        
+        
+    # function to plot location of sensors and their respective FOVs
+    def FOVplot(self):
+        k = 40 # length of arrow scale factor
+        fig, ax = plt.subplots()
+        plt.grid()
+        for sensor in self.sensors:   
+            plt.scatter(sensor.position[0], sensor.position[1], color='k')
+            plt.arrow(sensor.position[0], sensor.position[1], k*np.cos(sensor.bearing), k*np.sin(sensor.bearing), color='b', head_width=0.1, linestyle = 'dotted')
+            plt.arrow(sensor.position[0], sensor.position[1], k*np.cos(sensor.bearing+sensor.fov/2), k*np.sin(sensor.bearing+sensor.fov/2), color='k', head_width=0.1)
+            plt.arrow(sensor.position[0], sensor.position[1], k*np.cos(sensor.bearing-sensor.fov/2), k*np.sin(sensor.bearing-sensor.fov/2), color='k', head_width=0.1)
+            arc = patches.Arc((sensor.position[0], sensor.position[1]), 2*k, 2*k, theta1=np.degrees(sensor.bearing-sensor.fov/2), theta2=np.degrees(sensor.bearing+sensor.fov/2), color='k')
+            ax.add_patch(arc)
+            triangle = patches.Polygon([[sensor.position[0], sensor.position[1]], [sensor.position[0]+k*np.cos(sensor.bearing+sensor.fov/2), sensor.position[1]+k*np.sin(sensor.bearing+sensor.fov/2)], 
+                                        [sensor.position[0]+k*np.cos(sensor.bearing-sensor.fov/2), sensor.position[1]+k*np.sin(sensor.bearing-sensor.fov/2)]], color='k', alpha=0.2)
+            ax.add_patch(triangle)
+            theta = np.linspace(sensor.bearing-sensor.fov/2, sensor.bearing+sensor.fov/2, 100)
+            r = k
+            x = r*np.cos(theta) + sensor.position[0]
+            y = r*np.sin(theta) + sensor.position[1]
+            arcPart = patches.Polygon(np.column_stack((x,y)), color='k', alpha=0.2)
+            ax.add_patch(arcPart)
+        plt.xlim(np.min([sensor.position[0] for sensor in self.sensors])-5, np.max([sensor.position[0] for sensor in self.sensors])+5)
+        plt.ylim(np.min([sensor.position[1] for sensor in self.sensors])-5, np.max([sensor.position[1] for sensor in self.sensors])+5)
+        plt.gca().set_aspect('equal')
+        return fig, ax
+    
+    # return the neighborhood of each sensor 
+    def neighborhood(self, radius, sensor):
+        neighborhood = []
+        neighborhood.append([s for s in self.sensors if np.linalg.norm(s.position - sensor.position) <= radius])
+        return np.array(neighborhood).flatten()
+
+    # for each sensor, use the measurements of the neighborhood sensors to update the mean and covariance of the sensor
+    def consensus(self, radius):
+        updates = []
+        for sensor in self.sensors:
+            neighborhood = self.neighborhood(radius, sensor)
+            cum_sum = np.zeros((sensor.state_dim))
+            for neighbor in neighborhood:
+                cum_sum = cum_sum + neighbor.pred_state
+            cum_mean = cum_sum/(neighborhood.size)
+            cum_sig = np.zeros((sensor.state_dim, sensor.state_dim))
+            for neighbor in neighborhood:
+                cum_sig = cum_sig + ((neighbor.pred_state - cum_mean)@(neighbor.pred_state - cum_mean).T)
+            updates.append((cum_mean, cum_sig))
+        for idx, sensor in enumerate(self.sensors):
+            sensor.pred_state = updates[idx][0]
+            sensor.cov = updates[idx][1]
+
+            
+
+class Sensor():
+    def __init__(self, position, fov, bearing, angle_noise, state_dim, pred_state = np.zeros(2), cov = np.identity(2)):
+        self.position = position # position of the sensor in global frame
+        self.bearing = bearing # angle definining center of FOV from global frame x-axis
+        self.fov = fov # total angle of view for the camera (split in two across the bearing)
+        self.angle_noise = angle_noise # should be smaller
+        self.history = np.array([])
+        self.mu_history = np.array([])
+        self.cov_history = np.array([])
+        self.pred_state = pred_state
+        self.cov = cov
+        self.state_dim = state_dim
+    
+    # returns true if the target is visible to the sensor
+    def is_visible(self, target_pos):
+        # Angle between sensor and target
+        meas_angle = self.g(target_pos)
+
+        return (-self.fov/2 <= meas_angle and meas_angle <= self.fov/2)
+    
+    # returns the measurement of the object's angle in the sensor frame
+    def angle_meas(self, target_pos):
+        meas = self.g(target_pos) + np.random.normal(0, self.angle_noise)
+        self.history = np.append(self.history, meas)
+        if meas > np.pi:
+            meas -= 2*np.pi
+        elif meas < -np.pi:
+            meas += 2*np.pi
+        return meas   
+    
+    # sensor measurement model return (dist, theta)
+    def g(self, target_pos):
+        # Angle between sensor and target
+        rel_pos = target_pos[0:2] - self.position
+        angle = ((np.arctan2(rel_pos[1], rel_pos[0]))) - self.bearing
+        if angle > np.pi:
+            angle -= 2*np.pi
+        elif angle < -np.pi:
+            angle += 2*np.pi
+        return angle
+    
+    def predict(self, target: Movement, u=np.array([0, 0])):
+        self.mu_history = np.append(self.mu_history, self.pred_state).reshape(-1, self.state_dim)
+        self.cov_history = np.append(self.cov_history, self.cov).reshape(-1, self.state_dim, self.state_dim)
+        if self.is_visible(target.state):
+            pred_mu = target.f_function(mu = self.pred_state, u = u)
+            A = target.jacobian_A(mu = self.pred_state, u = u)
+            pred_cov = A @ self.cov @ A.T + target.Q
+            self.pred_state, self.cov = pred_mu, pred_cov
+
+    def update(self, target: Movement, world: World):
+        # only update if target is visible to the sensor
+        if self.is_visible(target.state):
+            # update
+            true_state = target.state 
+            C = self.jacobian_C(self.pred_state, len(true_state)).reshape(1, self.state_dim)
+            Kt = self.cov @ C.T * np.linalg.inv(C @ self.cov @ C.T + np.diag([self.angle_noise]))
+            y = self.angle_meas(true_state)
+            g = self.g(self.pred_state)
+            self.pred_state = (self.pred_state.reshape(self.state_dim, 1) + Kt * (y - g)).flatten()
+            self.cov = self.cov - Kt @ (C @ self.cov)
+
+    def jacobian_C(self, target_pos, n):
+        Px = target_pos[0]
+        Py = target_pos[1]
+        Sx = self.position[0]
+        Sy = self.position[1]
+        # firsWt row
+        # dist = self.dist_meas(target_pos)
+        # C11 = (Px - Sx)/dist
+        # C12 = (Py - Sy)/dist
+        # second row
+
+        C21 = (Sy - Py)/(np.linalg.norm(self.position - target_pos[0:2])**2)
+        C22 = (Px - Sx)/(np.linalg.norm(self.position - target_pos[0:2])**2)
+
+        if n == 3:
+            return np.array([C21,C22,0])
+        else:
+            return np.array([C21,C22])
+
+
+
