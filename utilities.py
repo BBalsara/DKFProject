@@ -150,7 +150,7 @@ class Sensor():
         self.mu_history = np.array([])
         self.cov_history = np.array([])
         self.pred_state = pred_state
-        self.cov = cov
+        self.cov = cov # Sigma
         self.state_dim = state_dim
     
     # returns true if the target is visible to the sensor
@@ -213,6 +213,7 @@ class Sensor():
         # C12 = (Py - Sy)/dist
         # second row
 
+
         C21 = (Sy - Py)/(np.linalg.norm(self.position - target_pos[0:2])**2)
         C22 = (Px - Sx)/(np.linalg.norm(self.position - target_pos[0:2])**2)
 
@@ -220,6 +221,26 @@ class Sensor():
             return np.array([C21,C22,0])
         else:
             return np.array([C21,C22])
+
+    def little_u(self, C, y, R, x_bar, n, target: Movement):
+        if self.is_visible(target.state):
+            u = (C.T * np.linalg.inv(R) * (y - self.g(x_bar))).flatten()
+        else:
+            u = np.zeros(n)
+        return u
+
+    def big_U(self, C, R, n, target: Movement):
+        if self.is_visible(target.state):
+            U = np.linalg.inv(R) * np.outer(C, C)
+        else:
+            U = np.zeros(n)
+        return U
+    
+    def addHistory(self, x_hat):     
+        self.mu_history = np.vstack((self.mu_history, x_hat)).copy()
+
+    
+
 
 
 
