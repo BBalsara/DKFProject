@@ -91,7 +91,7 @@ class World():
         
     # function to plot location of sensors and their respective FOVs
     def FOVplot(self):
-        k = 40 # length of arrow scale factor
+        k = 4 # length of arrow scale factor
         fig, ax = plt.subplots()
         plt.grid()
         for sensor in self.sensors:   
@@ -149,8 +149,8 @@ class Sensor():
         self.history = np.array([])
         self.mu_history = np.array([])
         self.cov_history = np.array([])
-        self.pred_state = pred_state
-        self.cov = cov # Sigma
+        self.pred_state = np.array([4.5, 0, 0])
+        self.cov = 0.1 * np.identity(state_dim) # Sigma
         self.state_dim = state_dim
     
     # returns true if the target is visible to the sensor
@@ -237,7 +237,7 @@ class Sensor():
         return U
     
     def addHistory(self, x_hat):     
-        self.mu_history = np.vstack((self.mu_history, x_hat)).copy()
+        self.mu_history = np.vstack((self.mu_history, x_hat[:2])).copy()
 
     
 

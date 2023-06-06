@@ -5,26 +5,57 @@ from utilities import Movement, Sensor, World
 import matplotlib.pyplot as plt
 
 n = 3 # toggles state dimension
-np.random.seed(11)
+# np.random.seed(11)
 # Simulation class
 
 
 # Cameras (Position, FOV)
-fov = np.radians(30)
+# fov = np.radians(30)
+# bearing1 = np.radians(45) 
+# bearing2 = np.radians(225)
+# bearing3 = np.radians(135)
+# bearing4 = np.radians(180) 
+# position1 = np.array([0,0])
+# position2 = np.array([10,10])
+# position3 = np.array([15,0])
+# position4 = np.array([30,5])
+# angle_noise = 0.1
+# sensor1 = Sensor(position1, fov, bearing1, angle_noise,n)
+# sensor2 = Sensor(position2, fov, bearing2, angle_noise,n)
+# sensor3 = Sensor(position3, fov, bearing3, angle_noise,n)
+# sensor4 = Sensor(position4, fov, bearing4, angle_noise,n)
+# world = World(np.array([sensor1, sensor3, sensor4]))
+
+
+fov = np.radians(70)
 bearing1 = np.radians(45) 
 bearing2 = np.radians(225)
 bearing3 = np.radians(135)
 bearing4 = np.radians(180) 
+bearing5 = np.radians(80) 
+bearing6 = np.radians(0)
+bearing7 = np.radians(300)
+bearing8 = np.radians(220) 
 position1 = np.array([0,0])
 position2 = np.array([10,10])
-position3 = np.array([15,0])
+position3 = np.array([16,0])
 position4 = np.array([30,5])
+position5 = np.array([20,-10])
+position6 = np.array([10,15])
+position7 = np.array([16,26])
+position8 = np.array([30,30])
 angle_noise = 0.1
 sensor1 = Sensor(position1, fov, bearing1, angle_noise,n)
 sensor2 = Sensor(position2, fov, bearing2, angle_noise,n)
 sensor3 = Sensor(position3, fov, bearing3, angle_noise,n)
 sensor4 = Sensor(position4, fov, bearing4, angle_noise,n)
-world = World(np.array([sensor1, sensor3, sensor4]))
+sensor5 = Sensor(position5, fov, bearing5, angle_noise,n)
+sensor6 = Sensor(position6, fov, bearing6, angle_noise,n)
+sensor7 = Sensor(position7, fov, bearing7, angle_noise,n)
+sensor8 = Sensor(position8, fov, bearing8, angle_noise,n)
+
+world = World(np.array([sensor1, sensor2, sensor3, sensor4, sensor5, sensor6, sensor7, sensor8]))
+
 render, ax = world.FOVplot()
 measurement_difference = np.array([0,0])
 
@@ -55,14 +86,14 @@ def update(target: Movement, pred_mu, pred_cov, world: World):
         return pred_mu, pred_cov
     else:
         Kt = pred_cov @ C.T @ np.linalg.inv(C @ pred_cov @ C.T + np.diag(sensor_noises))
-        measurement_difference = y-g
+        # measurement_difference = y-g
         
 
-        mu = pred_mu + Kt @ (measurement_difference)
-        measurement_difference = np.append(measurement_difference, np.array(y-g).flatten())
+        mu = pred_mu + Kt @ (y-g)
+        # measurement_difference = np.append(measurement_difference, np.array(y-g).flatten())
         cov = pred_cov - Kt @ C @ pred_cov 
 
-    return mu, cov, measurement_difference
+    return mu, cov # , measurement_difference
 
 
 Tmax = 40
@@ -105,8 +136,8 @@ for t in range(1, int(Tmax/d_t)):
     pred_mu, pred_cov = predict(prev_mu, prev_cov, Object_a, u)
 
     # Update step
-    updated_mu, updated_cov, mdiff = update(Object_a, pred_mu, pred_cov, world)
-    measurement_difference = np.append(measurement_difference, mdiff)
+    updated_mu, updated_cov = update(Object_a, pred_mu, pred_cov, world)
+    # measurement_difference = np.append(measurement_difference)
     # Store values
     mu[:, t] = updated_mu
     cov[:, :, t] = updated_cov
@@ -118,9 +149,10 @@ print('Error:', error)
 
 # Plotting
 ax.plot()
-ax.plot(trueState[0,:],trueState[1,:], label='True Path')
+
 ax.plot(mu[0,:],mu[1,:], label='Estimated Path')
-ax.legend()
+ax.plot(trueState[0,:],trueState[1,:], label='True Path', color='black')
+ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 ax.set_title('EKF Estimated Trajectory')
 ax.set_xlabel('x')
 ax.set_ylabel('y')
