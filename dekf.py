@@ -16,7 +16,7 @@ def is_nearby(sensor1: Sensor, sensor2: Sensor , neighborhood_threshold):
     return dist < neighborhood_threshold
 
 # Cameras (Position, FOV)
-eps = 1e-5
+eps = 5e-4
 R = np.array([[0.1]])
 fov = np.radians(70)
 bearing1 = np.radians(45) 
@@ -113,7 +113,7 @@ for t in range(1, int(Tmax/d_t)):
     
     for i, sensor in enumerate(world.sensors):
         g = np.zeros(n)
-        S = np.zeros((n, n))
+        S = np.zeros((n, n)) + big_U[i]
         diff_xbar = np.zeros(n)
         for j, sensor11111 in enumerate(world.sensors):
             if is_nearby(world.sensors[i], world.sensors[j], radius) and not i == j:
@@ -177,7 +177,7 @@ ax.plot(sensor7.mu_history[:,0],sensor7.mu_history[:,1], label='Estimated Path 7
 ax.plot(sensor8.mu_history[:,0],sensor8.mu_history[:,1], label='Estimated Path 8')
 ax.plot(trueState[0,:],trueState[1,:], label='True Path', color='black')
 # ax.plot(sensor3.mu_history, label='Estimated Path 3')
-ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+ax.legend()
 ax.set_title('CEKF Estimated Trajectory')
 ax.set_xlabel('x')
 ax.set_ylabel('y')
